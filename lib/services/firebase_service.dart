@@ -34,9 +34,9 @@ class Lobby {
       hostName: json['hostName'] as String,
       players:
           (json['players'] as List<dynamic>?)
-                  ?.map((p) => _playerFromJson(p as Map<String, dynamic>))
-                  .toList() ??
-              [],
+              ?.map((p) => _playerFromJson(p as Map<String, dynamic>))
+              .toList() ??
+          [],
       isStarted: json['isStarted'] as bool? ?? false,
       createdAt: DateTime.fromMillisecondsSinceEpoch(
         json['createdAt'] as int? ?? DateTime.now().millisecondsSinceEpoch,
@@ -74,9 +74,9 @@ class Lobby {
       skillLevel: json['skillLevel'] as int? ?? 1,
       clueCards:
           (json['clueCards'] as List<dynamic>?)
-                  ?.map((e) => e.toString())
-                  .toList() ??
-              [],
+              ?.map((e) => e.toString())
+              .toList() ??
+          [],
       boardRow: json['boardRow'] as int? ?? 12,
       boardCol: json['boardCol'] as int? ?? 12,
       isOutOfGame: json['isOutOfGame'] as bool? ?? false,
@@ -165,11 +165,9 @@ class FirebaseService {
 
   // Get lobby by code
   Stream<Lobby?> getLobby(String code) {
-    return _firestore
-        .collection('lobbies')
-        .doc(code)
-        .snapshots()
-        .map((snapshot) {
+    return _firestore.collection('lobbies').doc(code).snapshots().map((
+      snapshot,
+    ) {
       if (!snapshot.exists) {
         return null;
       }
@@ -189,8 +187,9 @@ class FirebaseService {
 
     final lobby = Lobby.fromJson(doc.data()!);
 
-    final updatedPlayers =
-        lobby.players.where((p) => p.name != playerName).toList();
+    final updatedPlayers = lobby.players
+        .where((p) => p.name != playerName)
+        .toList();
 
     if (updatedPlayers.isEmpty) {
       // Delete lobby if empty
@@ -206,10 +205,9 @@ class FirebaseService {
 
   // Start the game
   Future<void> startGame(String code) async {
-    await _firestore
-        .collection('lobbies')
-        .doc(code)
-        .update({'isStarted': true});
+    await _firestore.collection('lobbies').doc(code).update({
+      'isStarted': true,
+    });
   }
 
   // Delete lobby
@@ -240,11 +238,7 @@ class FirebaseService {
 
   // Get game state stream
   Stream<Map<String, dynamic>?> getGameState(String code) {
-    return _firestore
-        .collection('games')
-        .doc(code)
-        .snapshots()
-        .map((snapshot) {
+    return _firestore.collection('games').doc(code).snapshots().map((snapshot) {
       if (!snapshot.exists) {
         return null;
       }
@@ -280,16 +274,18 @@ class FirebaseService {
 
     final updatedPlayers = players.map((p) {
       if (p.name == playerName) {
-        return Lobby._playerToJson(p.copyWith(
-          boardRow: boardRow,
-          boardCol: boardCol,
-          currentRoom: currentRoom != null
-              ? Room.values.firstWhere(
-                  (r) => r.name == currentRoom,
-                  orElse: () => Room.study,
-                )
-              : null,
-        ));
+        return Lobby._playerToJson(
+          p.copyWith(
+            boardRow: boardRow,
+            boardCol: boardCol,
+            currentRoom: currentRoom != null
+                ? Room.values.firstWhere(
+                    (r) => r.name == currentRoom,
+                    orElse: () => Room.study,
+                  )
+                : null,
+          ),
+        );
       }
       return Lobby._playerToJson(p);
     }).toList();
@@ -307,13 +303,17 @@ class FirebaseService {
     String askedPlayerName,
     bool cardShown,
   ) async {
-    await _firestore.collection('games').doc(code).collection('notifications').add({
-      'type': 'suggestion',
-      'askerName': askerName,
-      'askedPlayerName': askedPlayerName,
-      'cardShown': cardShown,
-      'timestamp': FieldValue.serverTimestamp(),
-    });
+    await _firestore
+        .collection('games')
+        .doc(code)
+        .collection('notifications')
+        .add({
+          'type': 'suggestion',
+          'askerName': askerName,
+          'askedPlayerName': askedPlayerName,
+          'cardShown': cardShown,
+          'timestamp': FieldValue.serverTimestamp(),
+        });
   }
 
   // Get suggestion notifications stream
@@ -326,13 +326,10 @@ class FirebaseService {
         .limit(1)
         .snapshots()
         .map((snapshot) {
-      if (snapshot.docs.isEmpty) return null;
-      final doc = snapshot.docs.first;
-      return {
-        'id': doc.id,
-        ...doc.data(),
-      };
-    });
+          if (snapshot.docs.isEmpty) return null;
+          final doc = snapshot.docs.first;
+          return {'id': doc.id, ...doc.data()};
+        });
   }
 
   // Mark notification as read
@@ -359,15 +356,15 @@ class FirebaseService {
         .doc(code)
         .collection('suggestionRequests')
         .add({
-      'type': 'request',
-      'askerName': askerName,
-      'askedPlayerName': askedPlayerName,
-      'askedItems': askedItems,
-      'matchingCards': matchingCards,
-      'cardsYouHave': cardsYouHave,
-      'status': 'pending',
-      'timestamp': FieldValue.serverTimestamp(),
-    });
+          'type': 'request',
+          'askerName': askerName,
+          'askedPlayerName': askedPlayerName,
+          'askedItems': askedItems,
+          'matchingCards': matchingCards,
+          'cardsYouHave': cardsYouHave,
+          'status': 'pending',
+          'timestamp': FieldValue.serverTimestamp(),
+        });
     return docRef.id;
   }
 
@@ -384,24 +381,22 @@ class FirebaseService {
         .where('status', isEqualTo: 'pending')
         .snapshots()
         .handleError((error) {
-      // Log error but don't crash - index might not be created yet
-      print('Error getting suggestion requests: $error');
-    }).map((snapshot) {
-      if (snapshot.docs.isEmpty) return null;
-      // Get the most recent one (by document ID or manually sort)
-      final docs = snapshot.docs.toList();
-      docs.sort((a, b) {
-        final aTime = a.data()['timestamp'] as Timestamp?;
-        final bTime = b.data()['timestamp'] as Timestamp?;
-        if (aTime == null || bTime == null) return 0;
-        return bTime.compareTo(aTime);
-      });
-      final doc = docs.first;
-      return {
-        'id': doc.id,
-        ...doc.data(),
-      };
-    });
+          // Log error but don't crash - index might not be created yet
+          print('Error getting suggestion requests: $error');
+        })
+        .map((snapshot) {
+          if (snapshot.docs.isEmpty) return null;
+          // Get the most recent one (by document ID or manually sort)
+          final docs = snapshot.docs.toList();
+          docs.sort((a, b) {
+            final aTime = a.data()['timestamp'] as Timestamp?;
+            final bTime = b.data()['timestamp'] as Timestamp?;
+            if (aTime == null || bTime == null) return 0;
+            return bTime.compareTo(aTime);
+          });
+          final doc = docs.first;
+          return {'id': doc.id, ...doc.data()};
+        });
   }
 
   // Send suggestion response (selected card)
@@ -416,10 +411,10 @@ class FirebaseService {
         .collection('suggestionRequests')
         .doc(requestId)
         .update({
-      'status': 'completed',
-      'selectedCard': selectedCard,
-      'responseTimestamp': FieldValue.serverTimestamp(),
-    });
+          'status': 'completed',
+          'selectedCard': selectedCard,
+          'responseTimestamp': FieldValue.serverTimestamp(),
+        });
   }
 
   // Get suggestion responses stream for asker
@@ -435,24 +430,22 @@ class FirebaseService {
         .where('status', isEqualTo: 'completed')
         .snapshots()
         .handleError((error) {
-      // Log error but don't crash - index might not be created yet
-      print('Error getting suggestion responses: $error');
-    }).map((snapshot) {
-      if (snapshot.docs.isEmpty) return null;
-      // Get the most recent one (by document ID or manually sort)
-      final docs = snapshot.docs.toList();
-      docs.sort((a, b) {
-        final aTime = a.data()['responseTimestamp'] as Timestamp?;
-        final bTime = b.data()['responseTimestamp'] as Timestamp?;
-        if (aTime == null || bTime == null) return 0;
-        return bTime.compareTo(aTime);
-      });
-      final doc = docs.first;
-      return {
-        'id': doc.id,
-        ...doc.data(),
-      };
-    });
+          // Log error but don't crash - index might not be created yet
+          print('Error getting suggestion responses: $error');
+        })
+        .map((snapshot) {
+          if (snapshot.docs.isEmpty) return null;
+          // Get the most recent one (by document ID or manually sort)
+          final docs = snapshot.docs.toList();
+          docs.sort((a, b) {
+            final aTime = a.data()['responseTimestamp'] as Timestamp?;
+            final bTime = b.data()['responseTimestamp'] as Timestamp?;
+            if (aTime == null || bTime == null) return 0;
+            return bTime.compareTo(aTime);
+          });
+          final doc = docs.first;
+          return {'id': doc.id, ...doc.data()};
+        });
   }
 
   // Delete suggestion request/response after processing

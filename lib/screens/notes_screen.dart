@@ -38,7 +38,7 @@ class _NotesScreenState extends State<NotesScreen> {
       // If there's any issue loading notes, start with empty map
       _notes = <String, NoteState>{};
     }
-
+    
     // Initialize notes for all suspects, weapons, and rooms if not present
     for (final suspect in Suspect.values) {
       _notes.putIfAbsent('suspect_${suspect.name}', () => NoteState.none);
@@ -59,7 +59,7 @@ class _NotesScreenState extends State<NotesScreen> {
         _notes[key] = state;
       }
     });
-
+    
     // Update player's notes and notify parent (outside setState to avoid nested setState)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
@@ -70,7 +70,7 @@ class _NotesScreenState extends State<NotesScreen> {
       }
     });
   }
-
+  
   void _saveNotes() {
     if (mounted) {
       final updatedPlayer = widget.player.copyWith(
@@ -79,7 +79,7 @@ class _NotesScreenState extends State<NotesScreen> {
       widget.onNotesUpdated(updatedPlayer);
     }
   }
-
+  
   @override
   void dispose() {
     // Save notes one final time when leaving the screen
@@ -141,17 +141,17 @@ class _NotesScreenState extends State<NotesScreen> {
                   (suspect) => !widget.player.clueCards.contains(suspect.name),
                 )
                 .map((suspect) {
-                  final key = 'suspect_${suspect.name}';
-                  return _NoteItem(
-                    label: suspect.name,
-                    noteState: _notes[key] ?? NoteState.none,
+              final key = 'suspect_${suspect.name}';
+              return _NoteItem(
+                label: suspect.name,
+                noteState: _notes[key] ?? NoteState.none,
                     onGreyTap: () =>
                         _setNoteState(key, NoteState.askedAndHasIt),
                     onBlueTap: () =>
                         _setNoteState(key, NoteState.mightBeAnswer),
-                    onGreenTap: () => _setNoteState(key, NoteState.isAnswer),
-                  );
-                }),
+                onGreenTap: () => _setNoteState(key, NoteState.isAnswer),
+              );
+            }),
             const SizedBox(height: 24),
             const Text(
               'Weapons:',
@@ -163,17 +163,17 @@ class _NotesScreenState extends State<NotesScreen> {
                   (weapon) => !widget.player.clueCards.contains(weapon.name),
                 )
                 .map((weapon) {
-                  final key = 'weapon_${weapon.name}';
-                  return _NoteItem(
-                    label: weapon.name,
-                    noteState: _notes[key] ?? NoteState.none,
+              final key = 'weapon_${weapon.name}';
+              return _NoteItem(
+                label: weapon.name,
+                noteState: _notes[key] ?? NoteState.none,
                     onGreyTap: () =>
                         _setNoteState(key, NoteState.askedAndHasIt),
                     onBlueTap: () =>
                         _setNoteState(key, NoteState.mightBeAnswer),
-                    onGreenTap: () => _setNoteState(key, NoteState.isAnswer),
-                  );
-                }),
+                onGreenTap: () => _setNoteState(key, NoteState.isAnswer),
+              );
+            }),
             const SizedBox(height: 24),
             const Text(
               'Rooms:',
@@ -183,17 +183,17 @@ class _NotesScreenState extends State<NotesScreen> {
             ...Room.values
                 .where((room) => !widget.player.clueCards.contains(room.name))
                 .map((room) {
-                  final key = 'room_${room.name}';
-                  return _NoteItem(
-                    label: room.name,
-                    noteState: _notes[key] ?? NoteState.none,
+              final key = 'room_${room.name}';
+              return _NoteItem(
+                label: room.name,
+                noteState: _notes[key] ?? NoteState.none,
                     onGreyTap: () =>
                         _setNoteState(key, NoteState.askedAndHasIt),
                     onBlueTap: () =>
                         _setNoteState(key, NoteState.mightBeAnswer),
-                    onGreenTap: () => _setNoteState(key, NoteState.isAnswer),
-                  );
-                }),
+                onGreenTap: () => _setNoteState(key, NoteState.isAnswer),
+              );
+            }),
           ],
         ),
       ),
@@ -301,13 +301,13 @@ class _NoteItem extends StatelessWidget {
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                _ColorButton(
-                  color: Colors.grey.shade400,
-                  icon: Icons.check_circle,
-                  isSelected: noteState == NoteState.askedAndHasIt,
-                  onTap: onGreyTap,
-                  tooltip: 'Asked someone and they have it',
-                ),
+                 _ColorButton(
+                   color: Colors.grey.shade400,
+                   icon: Icons.check_circle,
+                   isSelected: noteState == NoteState.askedAndHasIt,
+                   onTap: onGreyTap,
+                   tooltip: 'Asked someone and they have it',
+                 ),
                 const SizedBox(width: 4),
                 _ColorButton(
                   color: Colors.blue.shade300,
