@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'create_lobby_screen.dart';
-import 'join_lobby_screen.dart';
+import 'lobby/create_lobby_screen.dart';
+import 'lobby/join_lobby_screen.dart';
 
 class OnlineLobbyScreen extends StatelessWidget {
   const OnlineLobbyScreen({super.key});

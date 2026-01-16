@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../services/firebase_service.dart';
-import '../models/player.dart';
-import 'game_board_screen.dart';
+import '../../services/firebase_service.dart';
+import '../../models/player.dart';
+import '../game_board_screen.dart';
 
 class JoinLobbyScreen extends StatefulWidget {
   const JoinLobbyScreen({super.key});
@@ -65,7 +65,6 @@ class _JoinLobbyScreenState extends State<JoinLobbyScreen> {
 
   void _joinLobby(Lobby lobby, String playerName) async {
     if (lobby.isStarted) {
-      // Game already started, join it
       if (mounted) {
         Navigator.pushReplacement(
           context,
@@ -103,7 +102,6 @@ class _JoinLobbyScreenState extends State<JoinLobbyScreen> {
 
             final lobby = snapshot.data!;
 
-            // Auto-join when game starts
             if (lobby.isStarted) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 _joinLobby(lobby, _nameController.text.trim());
@@ -206,7 +204,6 @@ class _JoinLobbyScreenState extends State<JoinLobbyScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               if (!_showCodeInput) ...[
-                // Browse Lobbies
                 const Text(
                   'Available Lobbies',
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
@@ -235,7 +232,8 @@ class _JoinLobbyScreenState extends State<JoinLobbyScreen> {
                         return Card(
                           margin: const EdgeInsets.only(bottom: 8),
                           child: ListTile(
-                            leading: Icon(Icons.people, color: Colors.blue.shade700),
+                            leading:
+                                Icon(Icons.people, color: Colors.blue.shade700),
                             title: Text('Lobby ${lobby.code}'),
                             subtitle: Text(
                               '${lobby.players.length}/6 players - Host: ${lobby.hostName}',
@@ -263,7 +261,6 @@ class _JoinLobbyScreenState extends State<JoinLobbyScreen> {
                   child: const Text('Enter Code Manually'),
                 ),
               ] else ...[
-                // Enter Code
                 const Text(
                   'Enter Lobby Code',
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
@@ -293,7 +290,8 @@ class _JoinLobbyScreenState extends State<JoinLobbyScreen> {
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
-                  child: const Text('Join Lobby', style: TextStyle(fontSize: 18)),
+                  child:
+                      const Text('Join Lobby', style: TextStyle(fontSize: 18)),
                 ),
                 const SizedBox(height: 16),
                 TextButton(
@@ -312,4 +310,3 @@ class _JoinLobbyScreenState extends State<JoinLobbyScreen> {
     );
   }
 }
-

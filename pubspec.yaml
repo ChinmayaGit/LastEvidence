@@ -62,6 +62,16 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
+  assets:
+    - assets/background/
+    - assets/person/
+    - assets/room/
+    - assets/weapon/
+    - assets/diceBoard.jpg
+    - assets/multiplayerOffline.jpg
+    - assets/multiplayerOnline.jpg
+    - assets/soloPlayer.jpg
+
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg

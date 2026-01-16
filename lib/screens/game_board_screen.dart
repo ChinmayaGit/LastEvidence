@@ -6,9 +6,12 @@ import '../models/player.dart';
 import '../models/board.dart';
 import '../models/room.dart';
 import '../services/firebase_service.dart';
-import 'room_view_screen.dart';
-import 'clue_cards_screen.dart';
-import 'notes_screen.dart';
+import 'game/room_view_screen.dart';
+import 'game/clue_cards_screen.dart';
+import 'game/notes_screen.dart';
+import 'game/board_tab.dart';
+import 'game/game_status_view.dart';
+import 'game/accusation_dialog.dart';
 
 class GameBoardScreen extends StatefulWidget {
   final List<Player> initialPlayers;
@@ -223,6 +226,15 @@ class _GameBoardScreenState extends State<GameBoardScreen>
         [];
 
     if (selectedCard == null) {
+      if (widget.isOnline && widget.lobbyCode != null) {
+        _firebaseService.sendSuggestionNotification(
+          widget.lobbyCode!,
+          askerName,
+          askedPlayerName,
+          false,
+          askedItems,
+        );
+      }
       // No card selected - end turn silently
       _nextTurn();
       // Delete the response
@@ -262,6 +274,16 @@ class _GameBoardScreenState extends State<GameBoardScreen>
       roomForNote,
     );
 
+    if (widget.isOnline && widget.lobbyCode != null) {
+      _firebaseService.sendSuggestionNotification(
+        widget.lobbyCode!,
+        askerName,
+        askedPlayerName,
+        true,
+        askedItems,
+      );
+    }
+
     // Delete the response after showing
     _firebaseService.deleteSuggestionRequest(widget.lobbyCode!, responseId);
   }
@@ -271,6 +293,11 @@ class _GameBoardScreenState extends State<GameBoardScreen>
     final askedPlayerName =
         notification['askedPlayerName'] as String? ?? 'Unknown';
     final cardShown = notification['cardShown'] as bool? ?? false;
+    final askedItems =
+        (notification['askedItems'] as List<dynamic>?)
+            ?.map((e) => e.toString())
+            .toList() ??
+        [];
 
     // Don't show notification to the asker or the asked player
     if (askerName == _localPlayerName || askedPlayerName == _localPlayerName) {
@@ -289,6 +316,21 @@ class _GameBoardScreenState extends State<GameBoardScreen>
             children: [
               Text('$askerName asked $askedPlayerName'),
               const SizedBox(height: 8),
+              if (askedItems.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                const Text(
+                  'Asked about:',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 4),
+                ...askedItems.map(
+                  (item) => Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 2),
+                    child: Text(item),
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
               if (cardShown)
                 Container(
                   padding: const EdgeInsets.all(12),
@@ -683,6 +725,11 @@ class _GameBoardScreenState extends State<GameBoardScreen>
                 refutedCard.startsWith('SUGGESTION_PENDING')) {
               // Handle pending suggestion - show dialog to asked player
               _handlePendingSuggestion(refutedCard, room);
+            } else if (refutedCard == 'ONLINE_PENDING') {
+              // For online games, suggestion is pending - don't end turn yet
+              // The turn will end when the response is received via _handleSuggestionResponse
+              // Just return without doing anything
+              return;
             } else {
               setState(() {
                 if (refutedCard != null) {
@@ -1131,7 +1178,7 @@ class _GameBoardScreenState extends State<GameBoardScreen>
 
     showDialog(
       context: context,
-      builder: (context) => _AccusationDialog(
+      builder: (context) => AccusationDialog(
         gameState: _gameState,
         initialRoom: currentPlayer.currentRoom!.name,
         onAccusation: (suspect, weapon, room) {
@@ -1935,15 +1982,23 @@ class _GameBoardScreenState extends State<GameBoardScreen>
         child: IndexedStack(
           index: _bottomNavIndex,
           children: [
-            // Index 0: Game Status View
-            _buildGameStatusView(localPlayer ?? currentPlayer),
-            // Index 1: Clues View
+            GameStatusView(gameState: _gameState),
             _buildCluesView(localPlayer ?? currentPlayer),
-            // Index 2: Board View
-            _buildBoardView(isMyTurn, localPlayer, currentPlayer),
-            // Index 3: Notes View
+            BoardTab(
+              gameState: _gameState,
+              isMyTurn: isMyTurn,
+              isOnline: widget.isOnline,
+              hasRolledDice: _hasRolledDice,
+              validMoves: _validMoves,
+              selectedSquare: _selectedSquare,
+              verticalScrollController: _verticalScrollController,
+              horizontalScrollController: _horizontalScrollController,
+              onEnterRoom: _enterRoom,
+              onRollDice: _rollDice,
+              onPassTurn: _passTurn,
+              onSquareTap: _selectSquare,
+            ),
             _buildNotesView(localPlayer ?? currentPlayer),
-            // Index 4: Accuse View
             _buildAccuseView(isMyTurn, localPlayer, currentPlayer),
           ],
         ),
@@ -1982,160 +2037,6 @@ class _GameBoardScreenState extends State<GameBoardScreen>
     });
 
     // All views are handled by IndexedStack - no action needed
-  }
-
-  // Build Board View
-  Widget _buildBoardView(
-    bool isMyTurn,
-    Player? localPlayer,
-    Player currentPlayer,
-  ) {
-    return Column(
-      children: [
-        // Turn message for online mode
-        if (widget.isOnline && !isMyTurn)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            margin: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.orange.shade100,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.orange.shade300),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.hourglass_empty,
-                  color: Colors.orange.shade700,
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  '${currentPlayer.name}\'s turn - wait for your turn',
-                  style: TextStyle(
-                    color: Colors.orange.shade900,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        // Game board
-        Expanded(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              return SingleChildScrollView(
-                controller: _verticalScrollController,
-                child: SingleChildScrollView(
-                  controller: _horizontalScrollController,
-                  scrollDirection: Axis.horizontal,
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: _buildBoard(),
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-        // Enter Room, Dice, and Pass buttons
-        if (isMyTurn || !widget.isOnline)
-          Container(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                // Enter Room button (only show if dice has been rolled)
-                if (_hasRolledDice)
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: _enterRoom,
-                      icon: const Icon(Icons.door_front_door),
-                      label: const Text('Enter Room'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green.shade600,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 4,
-                      ),
-                    ),
-                  ),
-                if (_hasRolledDice) const SizedBox(width: 16),
-                // Dice button/result in circle
-                Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: _hasRolledDice ? null : _rollDice,
-                    borderRadius: BorderRadius.circular(30),
-                    child: Container(
-                      width: 60,
-                      height: 60,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: _hasRolledDice
-                            ? Colors.blue.shade100
-                            : Colors.yellow.shade300,
-                        border: Border.all(
-                          color: _hasRolledDice
-                              ? Colors.blue.shade300
-                              : Colors.orange.shade400,
-                          width: 2,
-                        ),
-                      ),
-                      child: Center(
-                        child: _hasRolledDice
-                            ? Text(
-                                '${_gameState.diceRoll}',
-                                style: TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.blue.shade900,
-                                ),
-                              )
-                            : Icon(
-                                Icons.casino,
-                                size: 32,
-                                color: Colors.orange.shade800,
-                              ),
-                      ),
-                    ),
-                  ),
-                ),
-                if (_hasRolledDice) const SizedBox(width: 16),
-                // Pass button (only show if dice has been rolled)
-                if (_hasRolledDice)
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: _passTurn,
-                      icon: const Icon(Icons.skip_next),
-                      label: const Text('Pass'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.orange.shade600,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 4,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-      ],
-    );
   }
 
   // Build Clues View
@@ -2211,12 +2112,12 @@ class _GameBoardScreenState extends State<GameBoardScreen>
             isExpanded: true,
             items:
                 const [
-                  'Colonel Mustard',
-                  'Professor Plum',
-                  'Reverend Green',
-                  'Mrs Peacock',
-                  'Miss Scarlett',
-                  'Mrs White',
+                  'Alex Hunter',
+                  'Blake Rivers',
+                  'Casey Knight',
+                  'Jordan Steele',
+                  'Riley Cross',
+                  'Taylor Frost',
                 ].map((suspect) {
                   return DropdownMenuItem(value: suspect, child: Text(suspect));
                 }).toList(),
@@ -2267,15 +2168,15 @@ class _GameBoardScreenState extends State<GameBoardScreen>
             isExpanded: true,
             items:
                 const [
-                  'Hall',
-                  'Lounge',
-                  'Dining Room',
-                  'Kitchen',
-                  'Ballroom',
-                  'Conservatory',
-                  'Billiard Room',
-                  'Library',
-                  'Study',
+                  'Grand Hall',
+                  'Sky Lounge',
+                  'Banquet Hall',
+                  'Chef Kitchen',
+                  'Secret Basement',
+                  'Rooftop Pool',
+                  'Hidden Garden',
+                  'Silent Library',
+                  'Private Study',
                 ].map((room) {
                   return DropdownMenuItem(value: room, child: Text(room));
                 }).toList(),
@@ -2358,442 +2259,6 @@ class _GameBoardScreenState extends State<GameBoardScreen>
     );
   }
 
-  // Build Game Status View
-  Widget _buildGameStatusView(Player player) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Players status
-          const Text(
-            'Players:',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
-          ),
-          const SizedBox(height: 12),
-          ..._gameState.players.map((p) {
-            return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 6.0),
-              child: Row(
-                children: [
-                  Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: p.playerColor,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Center(
-                      child: Text(
-                        p.firstLetter,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(p.name, style: const TextStyle(fontSize: 16)),
-                  ),
-                  if (p.isOutOfGame)
-                    const Chip(
-                      label: Text('Out'),
-                      backgroundColor: Colors.red,
-                      labelStyle: TextStyle(color: Colors.white, fontSize: 12),
-                    )
-                  else if (p.name == _gameState.currentPlayer.name)
-                    const Chip(
-                      label: Text('Current Turn'),
-                      backgroundColor: Colors.green,
-                      labelStyle: TextStyle(color: Colors.white, fontSize: 12),
-                    ),
-                ],
-              ),
-            );
-          }),
-          const SizedBox(height: 24),
-          // Game info
-          if (_gameState.gameOver) ...[
-            const Divider(),
-            const SizedBox(height: 8),
-            const Text(
-              'Game Over!',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Winner: ${_gameState.winner ?? "Unknown"}',
-              style: const TextStyle(fontSize: 16),
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              'Solution:',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '  Suspect: ${_gameState.murderer ?? "Unknown"}',
-              style: const TextStyle(fontSize: 16),
-            ),
-            Text(
-              '  Weapon: ${_gameState.murderWeapon ?? "Unknown"}',
-              style: const TextStyle(fontSize: 16),
-            ),
-            Text(
-              '  Room: ${_gameState.murderRoom ?? "Unknown"}',
-              style: const TextStyle(fontSize: 16),
-            ),
-          ] else ...[
-            const Divider(),
-            const SizedBox(height: 8),
-            const Text(
-              'Game Info:',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Current Turn: ${_gameState.currentPlayer.name}',
-              style: const TextStyle(fontSize: 16),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Dice Roll: ${_gameState.diceRoll > 0 ? _gameState.diceRoll : "Not rolled"}',
-              style: const TextStyle(fontSize: 16),
-            ),
-            if (_gameState.remainingSteps > 0) ...[
-              const SizedBox(height: 8),
-              Text(
-                'Remaining Steps: ${_gameState.remainingSteps}',
-                style: const TextStyle(fontSize: 16),
-              ),
-            ],
-          ],
-        ],
-      ),
-    );
-  }
-
-  void _openClueCards(Player player) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => ClueCardsScreen(player: player)),
-    );
-  }
-
-  void _openNotes(Player player) {
-    Navigator.push<Player>(
-      context,
-      MaterialPageRoute(
-        builder: (context) => NotesScreen(
-          gameState: _gameState,
-          player: player,
-          onNotesUpdated: (updatedPlayer) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted) {
-                setState(() {
-                  final updatedPlayers = _gameState.players.map((p) {
-                    return p.name == updatedPlayer.name ? updatedPlayer : p;
-                  }).toList();
-                  _gameState = _gameState.copyWith(players: updatedPlayers);
-                });
-              }
-            });
-          },
-        ),
-      ),
-    ).then((updatedPlayer) {
-      if (updatedPlayer != null) {
-        setState(() {
-          final updatedPlayers = _gameState.players.map((p) {
-            return p.name == updatedPlayer.name ? updatedPlayer : p;
-          }).toList();
-          _gameState = _gameState.copyWith(players: updatedPlayers);
-        });
-      }
-    });
-  }
-
-  Widget _buildBoard() {
-    // Use a fixed square size - board will be scrollable if it doesn't fit
-    const squareSize = 30.0;
-
-    final board = _gameState.board;
-    final currentPlayer = _gameState.currentPlayer;
-
-    // Find all players on the board
-    final playerPositions = <String, Player>{};
-    for (final player in _gameState.players) {
-      final key = '${player.boardRow},${player.boardCol}';
-      playerPositions[key] = player;
-    }
-
-    // Get room center positions for labels (center of each 3x3 room)
-    final roomPositions = <Room, Map<String, int>>{
-      Room.study: {'row': 1, 'col': 1},
-      Room.hall: {'row': 1, 'col': 6},
-      Room.lounge: {'row': 1, 'col': 11},
-      Room.library: {'row': 6, 'col': 1},
-      Room.billiardRoom: {'row': 6, 'col': 6},
-      Room.diningRoom: {'row': 6, 'col': 11},
-      Room.conservatory: {'row': 11, 'col': 1},
-      Room.ballroom: {'row': 11, 'col': 6},
-      Room.kitchen: {'row': 11, 'col': 11},
-    };
-
-    final boardWidth = squareSize * Board.boardSize + 13;
-    final boardHeight = squareSize * Board.boardSize + 13;
-
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Colors.grey.shade100, Colors.grey.shade200],
-        ),
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 10,
-            spreadRadius: 2,
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.all(8),
-      child: SizedBox(
-        width: boardWidth,
-        height: boardHeight,
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            // Board grid
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: List.generate(Board.boardSize, (row) {
-                return Row(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: List.generate(Board.boardSize, (col) {
-                    final square = board.squares[row][col];
-                    final isCurrentPlayer =
-                        currentPlayer.boardRow == row &&
-                        currentPlayer.boardCol == col;
-                    final isValidMove = _validMoves.contains(square);
-                    final isSelected = _selectedSquare == square;
-                    final key = '$row,$col';
-                    final playerAtSquare = playerPositions[key];
-
-                    // Determine square appearance
-                    Color squareColor;
-                    IconData? squareIcon;
-                    Color? iconColor;
-                    double borderWidth = 1.0;
-                    Color borderColor = Colors.grey.shade400;
-
-                    if (square.room != null) {
-                      // Room square - all 3x3 squares use same color to appear as one unit
-                      // Check if it's the center (door) or edge
-                      final isCenter =
-                          square.isDoor && square.doorToRoom != null;
-                      squareColor = Colors
-                          .brown
-                          .shade300; // Same color for all room squares
-
-                      if (isCenter) {
-                        // Center square - show door icon
-                        squareIcon = Icons.door_front_door;
-                        iconColor = Colors.brown.shade900;
-                      }
-
-                      // Determine border: no border for internal edges, border only on room perimeter
-                      final roomSq = board.roomSquares[square.room];
-                      if (roomSq != null && roomSq.isNotEmpty) {
-                        final minRow = roomSq
-                            .map((s) => s.row)
-                            .reduce((a, b) => a < b ? a : b);
-                        final maxRow = roomSq
-                            .map((s) => s.row)
-                            .reduce((a, b) => a > b ? a : b);
-                        final minCol = roomSq
-                            .map((s) => s.col)
-                            .reduce((a, b) => a < b ? a : b);
-                        final maxCol = roomSq
-                            .map((s) => s.col)
-                            .reduce((a, b) => a > b ? a : b);
-
-                        // Only show border on outer edges of the 3x3 room
-                        final isOuterEdge =
-                            row == minRow ||
-                            row == maxRow ||
-                            col == minCol ||
-                            col == maxCol;
-                        if (isOuterEdge) {
-                          borderColor = Colors.brown.shade700;
-                          borderWidth = 2.0;
-                        } else {
-                          // Internal squares - no border to merge visually
-                          borderColor = Colors.brown.shade300;
-                          borderWidth = 0;
-                        }
-                      } else {
-                        borderColor = Colors.brown.shade600;
-                        borderWidth = 2.0;
-                      }
-                    } else {
-                      // Corridor
-                      squareColor = Colors.grey.shade200;
-                      borderColor = Colors.grey.shade400;
-                      borderWidth = 1.0;
-                    }
-
-                    if (isValidMove) {
-                      squareColor = Colors.blue.shade300;
-                      borderColor = Colors.blue.shade600;
-                      borderWidth = 2.5;
-                    }
-
-                    if (isSelected) {
-                      squareColor = Colors.blue.shade500;
-                      borderColor = Colors.blue.shade900;
-                      borderWidth = 3.0;
-                    }
-
-                    if (isCurrentPlayer) {
-                      borderColor = Colors.red.shade700;
-                      borderWidth = 3.0;
-                    }
-
-                    return GestureDetector(
-                      onTap: () => _selectSquare(square),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        curve: Curves.easeInOut,
-                        width: squareSize,
-                        height: squareSize,
-                        margin: const EdgeInsets.all(0.5),
-                        decoration: BoxDecoration(
-                          color: squareColor,
-                          borderRadius: BorderRadius.circular(4),
-                          border: Border.all(
-                            color: borderColor,
-                            width: borderWidth,
-                          ),
-                          boxShadow: isValidMove || isSelected
-                              ? [
-                                  BoxShadow(
-                                    color: Colors.blue.withOpacity(0.5),
-                                    blurRadius: 8,
-                                    spreadRadius: 2,
-                                  ),
-                                ]
-                              : isCurrentPlayer
-                              ? [
-                                  BoxShadow(
-                                    color: Colors.red.withOpacity(0.5),
-                                    blurRadius: 8,
-                                    spreadRadius: 2,
-                                  ),
-                                ]
-                              : null,
-                        ),
-                        child: Stack(
-                          children: [
-                            // Room icon
-                            if (squareIcon != null)
-                              Center(
-                                child: Icon(
-                                  squareIcon,
-                                  size: squareSize * 0.5,
-                                  color: iconColor,
-                                ),
-                              ),
-                            // Player token
-                            if (playerAtSquare != null)
-                              Center(
-                                child: Container(
-                                  width: squareSize * 0.7,
-                                  height: squareSize * 0.7,
-                                  decoration: BoxDecoration(
-                                    color: playerAtSquare.playerColor,
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: Colors.white,
-                                      width: 2,
-                                    ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.3),
-                                        blurRadius: 4,
-                                        spreadRadius: 1,
-                                      ),
-                                    ],
-                                  ),
-                                  child: Center(
-                                    child: Text(
-                                      playerAtSquare.firstLetter,
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: squareSize * 0.3,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                    );
-                  }),
-                );
-              }),
-            ),
-            // Room name labels
-            ...roomPositions.entries.map((entry) {
-              final room = entry.key;
-              final pos = entry.value;
-              return Positioned(
-                left: pos['col']! * squareSize - 25,
-                top: pos['row']! * squareSize - 12,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 3,
-                  ),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Colors.brown.shade700, Colors.brown.shade900],
-                    ),
-                    borderRadius: BorderRadius.circular(6),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.3),
-                        blurRadius: 4,
-                        spreadRadius: 1,
-                      ),
-                    ],
-                  ),
-                  child: Text(
-                    room.name,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      shadows: [Shadow(color: Colors.black, blurRadius: 2)],
-                    ),
-                  ),
-                ),
-              );
-            }),
-          ],
-        ),
-      ),
-    );
-  }
 }
 
 class _AccusationDialog extends StatefulWidget {
@@ -2834,17 +2299,17 @@ class _AccusationDialogState extends State<_AccusationDialog> {
           mainAxisSize: MainAxisSize.min,
           children: [
             const Text('Select the suspect:'),
-            DropdownButton<String>(
+          DropdownButton<String>(
               value: _selectedSuspect,
               isExpanded: true,
               items:
                   const [
-                    'Colonel Mustard',
-                    'Professor Plum',
-                    'Reverend Green',
-                    'Mrs Peacock',
-                    'Miss Scarlett',
-                    'Mrs White',
+                    'Alex Hunter',
+                    'Blake Rivers',
+                    'Casey Knight',
+                    'Jordan Steele',
+                    'Riley Cross',
+                    'Taylor Frost',
                   ].map((suspect) {
                     return DropdownMenuItem(
                       value: suspect,
@@ -2873,20 +2338,20 @@ class _AccusationDialogState extends State<_AccusationDialog> {
             ),
             const SizedBox(height: 16),
             const Text('Select the room:'),
-            DropdownButton<String>(
+          DropdownButton<String>(
               value: _selectedRoom,
               isExpanded: true,
               items:
                   const [
-                    'Hall',
-                    'Lounge',
-                    'Dining Room',
-                    'Kitchen',
-                    'Ballroom',
-                    'Conservatory',
-                    'Billiard Room',
-                    'Library',
-                    'Study',
+                    'Grand Hall',
+                    'Sky Lounge',
+                    'Banquet Hall',
+                    'Chef Kitchen',
+                    'Secret Basement',
+                    'Rooftop Pool',
+                    'Hidden Garden',
+                    'Silent Library',
+                    'Private Study',
                   ].map((room) {
                     return DropdownMenuItem(value: room, child: Text(room));
                   }).toList(),

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import '../models/game_state.dart';
-import '../models/player.dart';
-import '../models/suspect.dart';
-import '../models/weapon.dart';
-import '../models/room.dart';
+import '../../models/game_state.dart';
+import '../../models/player.dart';
+import '../../models/suspect.dart';
+import '../../models/weapon.dart';
+import '../../models/room.dart';
 
 class NotesScreen extends StatefulWidget {
   final GameState gameState;
@@ -27,7 +27,6 @@ class _NotesScreenState extends State<NotesScreen> {
   @override
   void initState() {
     super.initState();
-    // Load notes from player, or initialize empty
     try {
       if (widget.player.notes.isNotEmpty) {
         _notes = Map<String, NoteState>.from(widget.player.notes);
@@ -35,11 +34,9 @@ class _NotesScreenState extends State<NotesScreen> {
         _notes = <String, NoteState>{};
       }
     } catch (e) {
-      // If there's any issue loading notes, start with empty map
       _notes = <String, NoteState>{};
     }
-    
-    // Initialize notes for all suspects, weapons, and rooms if not present
+
     for (final suspect in Suspect.values) {
       _notes.putIfAbsent('suspect_${suspect.name}', () => NoteState.none);
     }
@@ -54,13 +51,12 @@ class _NotesScreenState extends State<NotesScreen> {
   void _setNoteState(String key, NoteState state) {
     setState(() {
       if (_notes[key] == state) {
-        _notes[key] = NoteState.none; // Clear if clicking same state
+        _notes[key] = NoteState.none;
       } else {
         _notes[key] = state;
       }
     });
-    
-    // Update player's notes and notify parent (outside setState to avoid nested setState)
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         final updatedPlayer = widget.player.copyWith(
@@ -70,7 +66,7 @@ class _NotesScreenState extends State<NotesScreen> {
       }
     });
   }
-  
+
   void _saveNotes() {
     if (mounted) {
       final updatedPlayer = widget.player.copyWith(
@@ -79,23 +75,31 @@ class _NotesScreenState extends State<NotesScreen> {
       widget.onNotesUpdated(updatedPlayer);
     }
   }
-  
+
   @override
   void dispose() {
-    // Save notes one final time when leaving the screen
     _saveNotes();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final availableSuspects = Suspect.values
+        .where((suspect) => !widget.player.clueCards.contains(suspect.name))
+        .toList();
+    final availableWeapons = Weapon.values
+        .where((weapon) => !widget.player.clueCards.contains(weapon.name))
+        .toList();
+    final availableRooms = Room.values
+        .where((room) => !widget.player.clueCards.contains(room.name))
+        .toList();
+
     return Scaffold(
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Legend
             Card(
               color: Colors.grey.shade100,
               child: Padding(
@@ -136,64 +140,90 @@ class _NotesScreenState extends State<NotesScreen> {
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            ...Suspect.values
-                .where(
-                  (suspect) => !widget.player.clueCards.contains(suspect.name),
-                )
-                .map((suspect) {
-              final key = 'suspect_${suspect.name}';
-              return _NoteItem(
-                label: suspect.name,
-                noteState: _notes[key] ?? NoteState.none,
-                    onGreyTap: () =>
-                        _setNoteState(key, NoteState.askedAndHasIt),
-                    onBlueTap: () =>
-                        _setNoteState(key, NoteState.mightBeAnswer),
-                onGreenTap: () => _setNoteState(key, NoteState.isAnswer),
-              );
-            }),
+            if (availableSuspects.isNotEmpty)
+              SizedBox(
+                height: 260,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: availableSuspects.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 12),
+                  itemBuilder: (context, index) {
+                    final suspect = availableSuspects[index];
+                    final key = 'suspect_${suspect.name}';
+                    return _NoteImageCard(
+                      label: suspect.name,
+                      assetPath: suspect.assetPath,
+                      noteState: _notes[key] ?? NoteState.none,
+                      onGreyTap: () =>
+                          _setNoteState(key, NoteState.askedAndHasIt),
+                      onBlueTap: () =>
+                          _setNoteState(key, NoteState.mightBeAnswer),
+                      onGreenTap: () =>
+                          _setNoteState(key, NoteState.isAnswer),
+                    );
+                  },
+                ),
+              ),
             const SizedBox(height: 24),
             const Text(
               'Weapons:',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            ...Weapon.values
-                .where(
-                  (weapon) => !widget.player.clueCards.contains(weapon.name),
-                )
-                .map((weapon) {
-              final key = 'weapon_${weapon.name}';
-              return _NoteItem(
-                label: weapon.name,
-                noteState: _notes[key] ?? NoteState.none,
-                    onGreyTap: () =>
-                        _setNoteState(key, NoteState.askedAndHasIt),
-                    onBlueTap: () =>
-                        _setNoteState(key, NoteState.mightBeAnswer),
-                onGreenTap: () => _setNoteState(key, NoteState.isAnswer),
-              );
-            }),
+            if (availableWeapons.isNotEmpty)
+              SizedBox(
+                height: 260,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: availableWeapons.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 12),
+                  itemBuilder: (context, index) {
+                    final weapon = availableWeapons[index];
+                    final key = 'weapon_${weapon.name}';
+                    return _NoteImageCard(
+                      label: weapon.name,
+                      assetPath: weapon.assetPath,
+                      noteState: _notes[key] ?? NoteState.none,
+                      onGreyTap: () =>
+                          _setNoteState(key, NoteState.askedAndHasIt),
+                      onBlueTap: () =>
+                          _setNoteState(key, NoteState.mightBeAnswer),
+                      onGreenTap: () =>
+                          _setNoteState(key, NoteState.isAnswer),
+                    );
+                  },
+                ),
+              ),
             const SizedBox(height: 24),
             const Text(
               'Rooms:',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            ...Room.values
-                .where((room) => !widget.player.clueCards.contains(room.name))
-                .map((room) {
-              final key = 'room_${room.name}';
-              return _NoteItem(
-                label: room.name,
-                noteState: _notes[key] ?? NoteState.none,
-                    onGreyTap: () =>
-                        _setNoteState(key, NoteState.askedAndHasIt),
-                    onBlueTap: () =>
-                        _setNoteState(key, NoteState.mightBeAnswer),
-                onGreenTap: () => _setNoteState(key, NoteState.isAnswer),
-              );
-            }),
+            if (availableRooms.isNotEmpty)
+              SizedBox(
+                height: 260,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: availableRooms.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 12),
+                  itemBuilder: (context, index) {
+                    final room = availableRooms[index];
+                    final key = 'room_${room.name}';
+                    return _NoteImageCard(
+                      label: room.name,
+                      assetPath: room.assetPath,
+                      noteState: _notes[key] ?? NoteState.none,
+                      onGreyTap: () =>
+                          _setNoteState(key, NoteState.askedAndHasIt),
+                      onBlueTap: () =>
+                          _setNoteState(key, NoteState.mightBeAnswer),
+                      onGreenTap: () =>
+                          _setNoteState(key, NoteState.isAnswer),
+                    );
+                  },
+                ),
+              ),
           ],
         ),
       ),
@@ -232,15 +262,17 @@ class _LegendItem extends StatelessWidget {
   }
 }
 
-class _NoteItem extends StatelessWidget {
+class _NoteImageCard extends StatelessWidget {
   final String label;
+  final String assetPath;
   final NoteState noteState;
   final VoidCallback onGreyTap;
   final VoidCallback onBlueTap;
   final VoidCallback onGreenTap;
 
-  const _NoteItem({
+  const _NoteImageCard({
     required this.label,
+    required this.assetPath,
     required this.noteState,
     required this.onGreyTap,
     required this.onBlueTap,
@@ -278,53 +310,89 @@ class _NoteItem extends StatelessWidget {
     final backgroundColor = _getBackgroundColor();
     final icon = _getIcon();
 
-    return Card(
-      color: backgroundColor,
-      margin: const EdgeInsets.only(bottom: 8),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
+    return SizedBox(
+      width: 160,
+      child: Card(
+        clipBehavior: Clip.antiAlias,
+        color: backgroundColor,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Expanded(
-              child: Text(
-                label,
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                  color: backgroundColor != null ? Colors.white : null,
-                ),
+              flex: 2,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Image.asset(
+                    assetPath,
+                    fit: BoxFit.cover,
+                  ),
+                  if (backgroundColor != null)
+                    Container(
+                      color: Colors.black.withOpacity(0.15),
+                    ),
+                  if (icon != null)
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: Icon(
+                        icon,
+                        color: Colors.white,
+                        size: 22,
+                      ),
+                    ),
+                ],
               ),
             ),
-            if (icon != null) Icon(icon, color: Colors.white, size: 24),
-            const SizedBox(width: 8),
-            // Color buttons
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                 _ColorButton(
-                   color: Colors.grey.shade400,
-                   icon: Icons.check_circle,
-                   isSelected: noteState == NoteState.askedAndHasIt,
-                   onTap: onGreyTap,
-                   tooltip: 'Asked someone and they have it',
-                 ),
-                const SizedBox(width: 4),
-                _ColorButton(
-                  color: Colors.blue.shade300,
-                  icon: Icons.help_outline,
-                  isSelected: noteState == NoteState.mightBeAnswer,
-                  onTap: onBlueTap,
-                  tooltip: 'Might be the answer',
+            Flexible(
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      label,
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        color: backgroundColor != null ? Colors.white : null,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _ColorButton(
+                          color: Colors.grey.shade400,
+                          icon: Icons.check_circle,
+                          isSelected: noteState == NoteState.askedAndHasIt,
+                          onTap: onGreyTap,
+                          tooltip: 'Asked someone and they have it',
+                        ),
+                        const SizedBox(width: 4),
+                        _ColorButton(
+                          color: Colors.blue.shade300,
+                          icon: Icons.help_outline,
+                          isSelected: noteState == NoteState.mightBeAnswer,
+                          onTap: onBlueTap,
+                          tooltip: 'Might be the answer',
+                        ),
+                        const SizedBox(width: 4),
+                        _ColorButton(
+                          color: Colors.green.shade400,
+                          icon: Icons.star,
+                          isSelected: noteState == NoteState.isAnswer,
+                          onTap: onGreenTap,
+                          tooltip: 'Think it\'s the answer',
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 4),
-                _ColorButton(
-                  color: Colors.green.shade400,
-                  icon: Icons.star,
-                  isSelected: noteState == NoteState.isAnswer,
-                  onTap: onGreenTap,
-                  tooltip: 'Think it\'s the answer',
-                ),
-              ],
+              ),
             ),
           ],
         ),

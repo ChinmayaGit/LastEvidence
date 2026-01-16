@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
-import '../services/firebase_service.dart';
-import '../models/player.dart';
-import 'game_board_screen.dart';
+import '../../services/firebase_service.dart';
+import '../../models/player.dart';
+import '../game_board_screen.dart';
 
 class CreateLobbyScreen extends StatefulWidget {
   const CreateLobbyScreen({super.key});
@@ -75,7 +75,7 @@ class _CreateLobbyScreenState extends State<CreateLobbyScreen> {
     }
 
     await _firebaseService.startGame(_lobbyCode!);
-    
+
     if (mounted) {
       Navigator.pushReplacement(
         context,
@@ -128,7 +128,10 @@ class _CreateLobbyScreenState extends State<CreateLobbyScreen> {
                   ),
                   child: _isCreating
                       ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text('Create Lobby', style: TextStyle(fontSize: 18)),
+                      : const Text(
+                          'Create Lobby',
+                          style: TextStyle(fontSize: 18),
+                        ),
                 ),
               ),
             ],
@@ -159,7 +162,6 @@ class _CreateLobbyScreenState extends State<CreateLobbyScreen> {
             padding: const EdgeInsets.all(24.0),
             child: Column(
               children: [
-                // Lobby Code Card
                 Card(
                   color: Colors.green.shade50,
                   child: Padding(
@@ -198,7 +200,6 @@ class _CreateLobbyScreenState extends State<CreateLobbyScreen> {
                   ),
                 ),
                 const SizedBox(height: 24),
-                // Players List
                 const Text(
                   'Players',
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
@@ -232,14 +233,11 @@ class _CreateLobbyScreenState extends State<CreateLobbyScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                // Start Game Button
                 if (lobby.hostName == _nameController.text.trim())
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: lobby.isStarted
-                          ? null
-                          : () => _startGame(lobby),
+                      onPressed: lobby.isStarted ? null : () => _startGame(lobby),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.green.shade600,
                         foregroundColor: Colors.white,

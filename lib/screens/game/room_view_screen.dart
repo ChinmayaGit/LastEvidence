@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../models/game_state.dart';
-import '../models/player.dart';
-import '../models/room.dart';
-import '../services/firebase_service.dart';
+import '../../models/game_state.dart';
+import '../../models/player.dart';
+import '../../models/room.dart';
+import '../../services/firebase_service.dart';
 
 class RoomViewScreen extends StatefulWidget {
   final GameState gameState;
@@ -46,7 +46,6 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Get available players (excluding current player and out of game players)
     final availablePlayers = widget.gameState.players
         .where(
           (p) =>
@@ -64,7 +63,6 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
           tooltip: 'Back',
         ),
         actions: [
-          // Current player info
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8.0),
             child: Center(
@@ -98,19 +96,16 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
               ),
             ),
           ),
-          // Result button
           IconButton(
             icon: const Icon(Icons.emoji_events),
             tooltip: 'View Game Results',
             onPressed: _showGameResults,
           ),
-          // Help button
           IconButton(
             icon: const Icon(Icons.help_outline),
             tooltip: 'Help',
             onPressed: _showHelp,
           ),
-          // Exit button
           IconButton(
             icon: const Icon(Icons.exit_to_app),
             tooltip: 'Exit Room',
@@ -166,8 +161,6 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
-
-              // Player selection
               const Text('Select a player to ask:'),
               const SizedBox(height: 8),
               DropdownButton<String>(
@@ -208,15 +201,12 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                   });
                 },
               ),
-
               const SizedBox(height: 24),
               const Text(
                 'Select 2 things to ask about:',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 16),
-
-              // Room checkbox
               Card(
                 color: _includeRoom ? Colors.green.shade50 : null,
                 child: CheckboxListTile(
@@ -233,7 +223,6 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                       ? (value) {
                           setState(() {
                             _includeRoom = value ?? false;
-                            // If room is selected and we have 2 items, clear others
                             if (_includeRoom && _selectedCount > 2) {
                               if (_selectedSuspect != null &&
                                   _selectedWeapon != null) {
@@ -245,10 +234,7 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                       : null,
                 ),
               ),
-
               const SizedBox(height: 8),
-
-              // Suspect dropdown
               Card(
                 color: _selectedSuspect != null ? Colors.blue.shade50 : null,
                 child: ListTile(
@@ -262,12 +248,12 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                         child: Text('None (Deselect)'),
                       ),
                       ...const [
-                        'Colonel Mustard',
-                        'Professor Plum',
-                        'Reverend Green',
-                        'Mrs Peacock',
-                        'Miss Scarlett',
-                        'Mrs White',
+                        'Alex Hunter',
+                        'Blake Rivers',
+                        'Casey Knight',
+                        'Jordan Steele',
+                        'Riley Cross',
+                        'Taylor Frost',
                       ].map((suspect) {
                         return DropdownMenuItem<String?>(
                           value: suspect,
@@ -281,7 +267,6 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                               if (value != null &&
                                   _selectedCount >= 2 &&
                                   !_includeRoom) {
-                                // If we have 2 items and room is not selected, clear weapon
                                 _selectedWeapon = null;
                               }
                               _selectedSuspect = value;
@@ -291,10 +276,7 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                   ),
                 ),
               ),
-
               const SizedBox(height: 8),
-
-              // Weapon dropdown
               Card(
                 color: _selectedWeapon != null ? Colors.red.shade50 : null,
                 child: ListTile(
@@ -327,7 +309,6 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                               if (value != null &&
                                   _selectedCount >= 2 &&
                                   !_includeRoom) {
-                                // If we have 2 items and room is not selected, clear suspect
                                 _selectedSuspect = null;
                               }
                               _selectedWeapon = value;
@@ -337,17 +318,13 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                   ),
                 ),
               ),
-
-              // Status indicator
-              if (_selectedPlayer != null && _selectedCount == 2) ...[
+              if (_selectedCount > 0) ...[
                 const SizedBox(height: 24),
-                _buildStatusIndicator(),
+                _buildSelfCardWarning(),
               ],
-
               const SizedBox(height: 24),
               ElevatedButton(
-                onPressed:
-                    _selectedPlayer != null &&
+                onPressed: _selectedPlayer != null &&
                         _selectedCount == 2 &&
                         !_isProcessing
                     ? _makeSuggestion
@@ -394,8 +371,8 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
           ),
           TextButton(
             onPressed: () {
-              Navigator.pop(context); // Close dialog
-              Navigator.pop(context); // Exit room
+              Navigator.pop(context);
+              Navigator.pop(context);
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('Exit'),
@@ -415,7 +392,6 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Players status
               const Text(
                 'Players:',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
@@ -470,7 +446,6 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                 );
               }),
               const SizedBox(height: 16),
-              // Game info
               if (widget.gameState.gameOver) ...[
                 const Divider(),
                 const Text(
@@ -542,41 +517,20 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
               ),
               const SizedBox(height: 16),
               const Text(
-                'Status Indicator:',
+                'Warnings:',
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
               Row(
                 children: [
-                  Icon(Icons.check_circle, color: Colors.green, size: 20),
+                  Icon(Icons.warning, color: Colors.orange, size: 20),
                   const SizedBox(width: 8),
                   const Expanded(
                     child: Text(
-                      'Green = Player has at least one matching card',
+                      'You will see a warning if you select a card you have.',
                     ),
                   ),
                 ],
-              ),
-              const SizedBox(height: 4),
-              Row(
-                children: [
-                  Icon(Icons.cancel, color: Colors.red, size: 20),
-                  const SizedBox(width: 8),
-                  const Expanded(
-                    child: Text(
-                      'Red = Player does not have any matching cards',
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Note:',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const Text(
-                'If the asked player has matching cards, they will show you ONE random card. Other players will be notified that a card was shown, but won\'t know which card.',
-                style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
               ),
             ],
           ),
@@ -591,63 +545,42 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
     );
   }
 
-  Widget _buildStatusIndicator() {
-    if (_selectedPlayer == null) return const SizedBox.shrink();
-
+  Widget _buildSelfCardWarning() {
     final currentPlayer = widget.gameState.currentPlayer;
 
-    // Check what cards are being asked about
     final askedItems = <String>[];
     if (_includeRoom) askedItems.add(widget.room.name);
     if (_selectedSuspect != null) askedItems.add(_selectedSuspect!);
     if (_selectedWeapon != null) askedItems.add(_selectedWeapon!);
 
-    // Find which specific cards the current player has
     final cardsYouHave = askedItems
         .where((item) => currentPlayer.clueCards.contains(item))
         .toList();
 
-    // Only show indicator if current player has a card (warning)
-    if (cardsYouHave.isEmpty) return const SizedBox.shrink();
+    if (cardsYouHave.isEmpty) {
+      return const SizedBox.shrink();
+    }
 
-    return Card(
-      color: Colors.orange.shade50,
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Row(
-          children: [
-            Icon(Icons.warning, color: Colors.orange.shade700, size: 32),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Warning: You have this card:',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.orange.shade900,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  ...cardsYouHave.map(
-                    (card) => Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Text(
-                        '• $card',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.orange.shade900,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.orange.shade50,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.orange.shade200),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.warning, color: Colors.orange.shade700),
+          const SizedBox(width: 8),
+          const Expanded(
+            child: Text(
+              'Warning: you have at least one of these cards.',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -664,24 +597,19 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
     );
     final currentPlayer = widget.gameState.currentPlayer;
 
-    // Build the list of asked items
     final askedItems = <String>[];
     if (_includeRoom) askedItems.add(widget.room.name);
     if (_selectedSuspect != null) askedItems.add(_selectedSuspect!);
     if (_selectedWeapon != null) askedItems.add(_selectedWeapon!);
 
-    // Check if asked player has any of the cards
     final matchingCards = askedItems
         .where((item) => askedPlayer.clueCards.contains(item))
         .toList();
 
-    // Find which specific cards the current player (asker) has - only for warning
     final cardsYouHave = askedItems
         .where((item) => currentPlayer.clueCards.contains(item))
         .toList();
 
-    // If asked player has no cards, just end the turn silently
-    // (No message - if they don't have it, it could be part of the solution)
     if (matchingCards.isEmpty) {
       setState(() {
         _isProcessing = false;
@@ -691,16 +619,13 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
       return;
     }
 
-    // Close the suggestion screen
     Navigator.pop(context);
 
     if (!mounted) return;
 
-    // For online mode: Send suggestion request to asked player
     if (widget.isOnline &&
         widget.lobbyCode != null &&
         widget.localPlayerName != null) {
-      // Send request to Firebase
       await _firebaseService.sendSuggestionRequest(
         widget.lobbyCode!,
         currentPlayer.name,
@@ -710,7 +635,6 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
         cardsYouHave,
       );
 
-      // Show waiting message to asker
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -742,7 +666,6 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
             TextButton(
               onPressed: () {
                 Navigator.pop(context);
-                // Pass suggestion data for local handling
                 widget.onSuggestionMade('ONLINE_PENDING');
               },
               child: const Text('OK'),
@@ -751,11 +674,9 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
         ),
       );
     } else {
-      // For local games: Pass suggestion data through callback
       final suggestionData =
           'SUGGESTION_PENDING|${askedPlayer.name}|${currentPlayer.name}|${askedItems.join('|')}|${matchingCards.join('|')}|${cardsYouHave.join('|')}';
 
-      // Show waiting message to asker
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -800,159 +721,5 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
       _isProcessing = false;
     });
   }
-
-  Future<String?> _showCardSelectionDialog(
-    Player askedPlayer,
-    Player askerPlayer,
-    List<String> askedItems,
-    List<String> matchingCards,
-  ) async {
-    return await showDialog<String>(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) => AlertDialog(
-        title: Column(
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: askedPlayer.playerColor,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 2),
-                  ),
-                  child: Center(
-                    child: Text(
-                      askedPlayer.firstLetter,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        askedPlayer.name,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        '${askerPlayer.name} asked you about:',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.blue.shade200),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'You have these matching cards:',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    ...askedItems.map(
-                      (item) => Padding(
-                        padding: const EdgeInsets.only(left: 8, top: 4),
-                        child: Row(
-                          children: [
-                            Icon(
-                              matchingCards.contains(item)
-                                  ? Icons.check_circle
-                                  : Icons.cancel,
-                              size: 16,
-                              color: matchingCards.contains(item)
-                                  ? Colors.green
-                                  : Colors.grey,
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                item,
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
-                                  color: matchingCards.contains(item)
-                                      ? Colors.green.shade900
-                                      : Colors.grey.shade600,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Select which card to show to ${askerPlayer.name}:',
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                ),
-              ),
-              const SizedBox(height: 12),
-              ...matchingCards.map(
-                (card) => Card(
-                  color: Colors.grey.shade50,
-                  child: ListTile(
-                    title: Text(
-                      card,
-                      style: const TextStyle(fontWeight: FontWeight.normal),
-                    ),
-                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                    onTap: () {
-                      // Immediately confirm selection when card is tapped
-                      Navigator.pop(dialogContext, card);
-                    },
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(dialogContext, null);
-            },
-            child: const Text('Cancel'),
-          ),
-        ],
-      ),
-    );
-  }
 }
+

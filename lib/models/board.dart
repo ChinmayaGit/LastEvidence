@@ -53,10 +53,10 @@ class Board {
       Room.hall: {'startRow': 0, 'startCol': 5},       // Top-middle
       Room.lounge: {'startRow': 0, 'startCol': 10},    // Top-right
       Room.library: {'startRow': 5, 'startCol': 0},    // Middle-left
-      Room.billiardRoom: {'startRow': 5, 'startCol': 5}, // Middle-center
+      Room.garden: {'startRow': 5, 'startCol': 5},     // Middle-center
       Room.diningRoom: {'startRow': 5, 'startCol': 10},  // Middle-right
-      Room.conservatory: {'startRow': 10, 'startCol': 0}, // Bottom-left
-      Room.ballroom: {'startRow': 10, 'startCol': 5},    // Bottom-middle
+      Room.rooftopPool: {'startRow': 10, 'startCol': 0}, // Bottom-left
+      Room.basement: {'startRow': 10, 'startCol': 5},    // Bottom-middle
       Room.kitchen: {'startRow': 10, 'startCol': 10},    // Bottom-right
     };
 

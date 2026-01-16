@@ -302,6 +302,7 @@ class FirebaseService {
     String askerName,
     String askedPlayerName,
     bool cardShown,
+    List<String> askedItems,
   ) async {
     await _firestore
         .collection('games')
@@ -312,6 +313,7 @@ class FirebaseService {
           'askerName': askerName,
           'askedPlayerName': askedPlayerName,
           'cardShown': cardShown,
+          'askedItems': askedItems,
           'timestamp': FieldValue.serverTimestamp(),
         });
   }
