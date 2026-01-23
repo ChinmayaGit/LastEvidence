@@ -12,7 +12,28 @@
           "package_name": "com.chinu.lastevidence"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "736357498606-r3toal2om2kk48kc8htn67j17lmgja9u.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.chinu.lastevidence",
+            "certificate_hash": "2d113659d10410e4aa0a68577f6d60a54174bd27"
+          }
+        },
+        {
+          "client_id": "736357498606-u92ta2l6pq1eovq768iej400t8n1du8e.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.chinu.lastevidence",
+            "certificate_hash": "05435c549dbd82f8404e1cf5621c96473ba919ac"
+          }
+        },
+        {
+          "client_id": "736357498606-14mu6jt6cgcib1g23n7r11bv2fiqm493.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCQ3LSQ9Ro8OAH_s3PlfyhvMeOIDXshegQ"
@@ -20,7 +41,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "736357498606-14mu6jt6cgcib1g23n7r11bv2fiqm493.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

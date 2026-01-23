@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'player_setup_screen.dart';
 import 'online_lobby_screen.dart';
 import 'firebase_test_screen.dart';
+import '../services/auth_service.dart';
 
 class ModeSelectionScreen extends StatelessWidget {
   const ModeSelectionScreen({super.key});
@@ -12,6 +13,15 @@ class ModeSelectionScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Evidence - Select Mode'),
         backgroundColor: Colors.deepPurple,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout, color: Colors.white),
+            tooltip: 'Logout',
+            onPressed: () async {
+              await AuthService().signOut();
+            },
+          ),
+        ],
       ),
       body: Center(
         child: Padding(

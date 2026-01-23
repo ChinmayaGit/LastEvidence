@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../services/firebase_service.dart';
@@ -19,6 +20,16 @@ class _CreateLobbyScreenState extends State<CreateLobbyScreen> {
   Stream<Lobby?>? _lobbyStream;
 
   @override
+  void initState() {
+    super.initState();
+    // Auto-fill name if user is logged in
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null && user.displayName != null) {
+      _nameController.text = user.displayName!;
+    }
+  }
+
+  @override
   void dispose() {
     _nameController.dispose();
     super.dispose();
@@ -38,7 +49,12 @@ class _CreateLobbyScreenState extends State<CreateLobbyScreen> {
 
     try {
       final playerName = _nameController.text.trim();
-      final hostPlayer = Player(name: playerName);
+      final user = FirebaseAuth.instance.currentUser;
+      final hostPlayer = Player(
+        name: playerName,
+        playerId: user?.uid, // Attach Auth UID
+      );
+      
       final code = await _firebaseService.createLobby(playerName, hostPlayer);
 
       setState(() {

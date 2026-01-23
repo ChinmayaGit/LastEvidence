@@ -22,7 +22,7 @@ class Lobby {
     return {
       'code': code,
       'hostName': hostName,
-      'players': players.map((p) => _playerToJson(p)).toList(),
+      'players': players.map((p) => playerToJson(p)).toList(),
       'isStarted': isStarted,
       'createdAt': createdAt.millisecondsSinceEpoch,
     };
@@ -34,7 +34,7 @@ class Lobby {
       hostName: json['hostName'] as String,
       players:
           (json['players'] as List<dynamic>?)
-              ?.map((p) => _playerFromJson(p as Map<String, dynamic>))
+              ?.map((p) => playerFromJson(p as Map<String, dynamic>))
               .toList() ??
           [],
       isStarted: json['isStarted'] as bool? ?? false,
@@ -44,20 +44,22 @@ class Lobby {
     );
   }
 
-  static Map<String, dynamic> _playerToJson(Player player) {
+  static Map<String, dynamic> playerToJson(Player player) {
     return {
       'name': player.name,
+      'playerId': player.playerId,
       'isComputer': player.isComputer,
       'skillLevel': player.skillLevel,
       'clueCards': player.clueCards,
       'boardRow': player.boardRow,
       'boardCol': player.boardCol,
       'isOutOfGame': player.isOutOfGame,
+      'currentRoom': player.currentRoom?.name,
       'notes': player.notes.map((key, value) => MapEntry(key, value.name)),
     };
   }
 
-  static Player _playerFromJson(Map<String, dynamic> json) {
+  static Player playerFromJson(Map<String, dynamic> json) {
     final notesMap = <String, NoteState>{};
     if (json['notes'] != null) {
       (json['notes'] as Map<String, dynamic>).forEach((key, value) {
@@ -70,6 +72,7 @@ class Lobby {
 
     return Player(
       name: json['name'] as String,
+      playerId: json['playerId'] as String?,
       isComputer: json['isComputer'] as bool? ?? false,
       skillLevel: json['skillLevel'] as int? ?? 1,
       clueCards:
@@ -80,6 +83,12 @@ class Lobby {
       boardRow: json['boardRow'] as int? ?? 12,
       boardCol: json['boardCol'] as int? ?? 12,
       isOutOfGame: json['isOutOfGame'] as bool? ?? false,
+      currentRoom: json['currentRoom'] != null
+          ? Room.values.firstWhere(
+              (e) => e.name == json['currentRoom'].toString(),
+              orElse: () => Room.study,
+            )
+          : null,
       notes: notesMap,
     );
   }
@@ -87,6 +96,66 @@ class Lobby {
 
 class FirebaseService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  // Check for active game session for user
+  Future<Map<String, dynamic>?> checkActiveSession(String userId) async {
+    try {
+      // 1. Check open lobbies first
+      final lobbySnapshot = await _firestore
+          .collection('lobbies')
+          .where(
+            'players',
+            arrayContains: {'playerId': userId},
+          ) // This won't work directly on array of maps
+          .get();
+
+      // Since we can't easily query array of maps by partial match in Firestore without specific structure,
+      // we'll fetch open lobbies and filter manually (not efficient for large scale but works for now)
+      // OR better: check all lobbies where user might be.
+
+      // A better approach for session persistence is to store "currentLobbyId" in a "users" collection.
+      // But sticking to the current structure, let's scan recent lobbies/games.
+
+      // Let's try to find a lobby where this player ID exists in the players list
+      // Note: This requires client-side filtering if we don't restructure data.
+      final allLobbies = await _firestore.collection('lobbies').get();
+      for (var doc in allLobbies.docs) {
+        final data = doc.data();
+        final players = (data['players'] as List<dynamic>?) ?? [];
+        final isMember = players.any((p) => p['playerId'] == userId);
+
+        if (isMember) {
+          return {
+            'type': 'lobby',
+            'code': doc.id,
+            'isStarted': data['isStarted'] ?? false,
+            'data': data,
+          };
+        }
+      }
+
+      // 2. Check active games (if separate from lobbies)
+      // In this app, games seem to share ID with lobbies but exist in 'games' collection once started
+      // We should check 'games' collection too if the lobby is marked as started.
+      final allGames = await _firestore.collection('games').get();
+      for (var doc in allGames.docs) {
+        final data = doc.data();
+        if (data['gameOver'] == true) continue; // Skip finished games
+
+        final players = (data['players'] as List<dynamic>?) ?? [];
+        final isMember = players.any((p) => p['playerId'] == userId);
+
+        if (isMember) {
+          return {'type': 'game', 'code': doc.id, 'data': data};
+        }
+      }
+
+      return null;
+    } catch (e) {
+      print('Error checking active session: $e');
+      return null;
+    }
+  }
 
   // Generate a random 6-digit code
   String _generateLobbyCode() {
@@ -134,7 +203,7 @@ class FirebaseService {
       // Add player to lobby
       final updatedPlayers = [...lobby.players, player];
       await _firestore.collection('lobbies').doc(code).update({
-        'players': updatedPlayers.map((p) => Lobby._playerToJson(p)).toList(),
+        'players': updatedPlayers.map((p) => Lobby.playerToJson(p)).toList(),
       });
 
       return true;
@@ -197,7 +266,7 @@ class FirebaseService {
     } else {
       // Update lobby
       await _firestore.collection('lobbies').doc(code).update({
-        'players': updatedPlayers.map((p) => Lobby._playerToJson(p)).toList(),
+        'players': updatedPlayers.map((p) => Lobby.playerToJson(p)).toList(),
         'hostName': updatedPlayers.first.name, // New host
       });
     }
@@ -226,7 +295,7 @@ class FirebaseService {
     String? winner,
   ) async {
     await _firestore.collection('games').doc(code).set({
-      'players': players.map((p) => Lobby._playerToJson(p)).toList(),
+      'players': players.map((p) => Lobby.playerToJson(p)).toList(),
       'currentPlayerIndex': currentPlayerIndex,
       'diceRoll': diceRoll,
       'remainingSteps': remainingSteps,
@@ -269,12 +338,12 @@ class FirebaseService {
 
     final data = gameDoc.data()!;
     final players = (data['players'] as List<dynamic>)
-        .map((p) => Lobby._playerFromJson(p as Map<String, dynamic>))
+        .map((p) => Lobby.playerFromJson(p as Map<String, dynamic>))
         .toList();
 
     final updatedPlayers = players.map((p) {
       if (p.name == playerName) {
-        return Lobby._playerToJson(
+        return Lobby.playerToJson(
           p.copyWith(
             boardRow: boardRow,
             boardCol: boardCol,
@@ -287,7 +356,7 @@ class FirebaseService {
           ),
         );
       }
-      return Lobby._playerToJson(p);
+      return Lobby.playerToJson(p);
     }).toList();
 
     await _firestore.collection('games').doc(code).update({

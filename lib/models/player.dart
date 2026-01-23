@@ -1,12 +1,7 @@
 import 'package:flutter/material.dart';
 import 'room.dart';
 
-enum NoteState {
-  none,
-  askedAndHasIt,
-  mightBeAnswer,
-  isAnswer,
-}
+enum NoteState { none, askedAndHasIt, mightBeAnswer, isAnswer }
 
 class Player {
   final String name;
@@ -18,9 +13,12 @@ class Player {
   final int boardCol;
   final bool isOutOfGame;
   final Map<String, NoteState> notes; // Player's personal notes
-  
+
+  final String? playerId; // Null for computer, Auth UID for logged in users
+
   Player({
     required this.name,
+    this.playerId,
     this.isComputer = false,
     this.skillLevel = 1,
     List<String>? clueCards,
@@ -34,6 +32,7 @@ class Player {
 
   Player copyWith({
     String? name,
+    String? playerId,
     bool? isComputer,
     int? skillLevel,
     List<String>? clueCards,
@@ -45,6 +44,7 @@ class Player {
   }) {
     return Player(
       name: name ?? this.name,
+      playerId: playerId ?? this.playerId,
       isComputer: isComputer ?? this.isComputer,
       skillLevel: skillLevel ?? this.skillLevel,
       clueCards: clueCards ?? this.clueCards,
@@ -55,7 +55,7 @@ class Player {
       notes: notes ?? this.notes,
     );
   }
-  
+
   // Generate color from player name hash
   Color get playerColor {
     final colors = [
@@ -73,8 +73,7 @@ class Player {
     final hash = name.hashCode;
     return colors[hash.abs() % colors.length].shade600;
   }
-  
+
   // Get first letter of player name
   String get firstLetter => name.isNotEmpty ? name[0].toUpperCase() : '?';
 }
-
