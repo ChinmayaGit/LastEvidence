@@ -8,25 +8,37 @@ Below is the **official visual sequence** used for story flow, UI progression, a
 
 ## 📖 Visual Story Sequence
 
-| Scene 1 | Scene 2 | Scene 3 |
-|--------|--------|--------|
-| ![](https://raw.githubusercontent.com/ChinmayaGit/LastEvidence/refs/heads/main/pics/1.jpg) | ![](https://raw.githubusercontent.com/ChinmayaGit/LastEvidence/refs/heads/main/pics/2.jpg) | ![](https://raw.githubusercontent.com/ChinmayaGit/LastEvidence/refs/heads/main/pics/3.png) |
+<table>
+<tr>
+<td><img src="https://raw.githubusercontent.com/ChinmayaGit/LastEvidence/refs/heads/main/pics/1.jpg" width="250" height="250"/></td>
+<td><img src="https://raw.githubusercontent.com/ChinmayaGit/LastEvidence/refs/heads/main/pics/2.jpg" width="250" height="250"/></td>
+<td><img src="https://raw.githubusercontent.com/ChinmayaGit/LastEvidence/refs/heads/main/pics/3.png" width="250" height="250"/></td>
+</tr>
 
-| Scene 4 | Scene 5 | Scene 6 |
-|--------|--------|--------|
-| ![](https://raw.githubusercontent.com/ChinmayaGit/LastEvidence/refs/heads/main/pics/4.png) | ![](https://raw.githubusercontent.com/ChinmayaGit/LastEvidence/refs/heads/main/pics/5.png) | ![](https://raw.githubusercontent.com/ChinmayaGit/LastEvidence/refs/heads/main/pics/6.jpg) |
+<tr>
+<td><img src="https://raw.githubusercontent.com/ChinmayaGit/LastEvidence/refs/heads/main/pics/4.png" width="250" height="250"/></td>
+<td><img src="https://raw.githubusercontent.com/ChinmayaGit/LastEvidence/refs/heads/main/pics/5.png" width="250" height="250"/></td>
+<td><img src="https://raw.githubusercontent.com/ChinmayaGit/LastEvidence/refs/heads/main/pics/6.jpg" width="250" height="250"/></td>
+</tr>
 
-| Scene 7 | Scene 8 | Scene 9 |
-|--------|--------|--------|
-| ![](https://raw.githubusercontent.com/ChinmayaGit/LastEvidence/refs/heads/main/pics/7.jpg) | ![](https://raw.githubusercontent.com/ChinmayaGit/LastEvidence/refs/heads/main/pics/8.jpg) | ![](https://raw.githubusercontent.com/ChinmayaGit/LastEvidence/refs/heads/main/pics/9.png) |
+<tr>
+<td><img src="https://raw.githubusercontent.com/ChinmayaGit/LastEvidence/refs/heads/main/pics/7.jpg" width="250" height="250"/></td>
+<td><img src="https://raw.githubusercontent.com/ChinmayaGit/LastEvidence/refs/heads/main/pics/8.jpg" width="250" height="250"/></td>
+<td><img src="https://raw.githubusercontent.com/ChinmayaGit/LastEvidence/refs/heads/main/pics/9.png" width="250" height="250"/></td>
+</tr>
 
-| Scene 10 | Scene 11 | Scene 12 |
-|--------|--------|--------|
-| ![](https://raw.githubusercontent.com/ChinmayaGit/LastEvidence/refs/heads/main/pics/10.jpg) | ![](https://raw.githubusercontent.com/ChinmayaGit/LastEvidence/refs/heads/main/pics/11.png) | ![](https://raw.githubusercontent.com/ChinmayaGit/LastEvidence/refs/heads/main/pics/12.png) |
+<tr>
+<td><img src="https://raw.githubusercontent.com/ChinmayaGit/LastEvidence/refs/heads/main/pics/10.jpg" width="250" height="250"/></td>
+<td><img src="https://raw.githubusercontent.com/ChinmayaGit/LastEvidence/refs/heads/main/pics/11.png" width="250" height="250"/></td>
+<td><img src="https://raw.githubusercontent.com/ChinmayaGit/LastEvidence/refs/heads/main/pics/12.png" width="250" height="250"/></td>
+</tr>
 
-| Scene 13 | Scene 14 |  |
-|--------|--------|--------|
-| ![](https://raw.githubusercontent.com/ChinmayaGit/LastEvidence/refs/heads/main/pics/13.png) | ![](https://raw.githubusercontent.com/ChinmayaGit/LastEvidence/refs/heads/main/pics/14.jpg) |  |
+<tr>
+<td><img src="https://raw.githubusercontent.com/ChinmayaGit/LastEvidence/refs/heads/main/pics/13.png" width="250" height="250"/></td>
+<td><img src="https://raw.githubusercontent.com/ChinmayaGit/LastEvidence/refs/heads/main/pics/14.jpg" width="250" height="250"/></td>
+<td></td>
+</tr>
+</table>
 
 ---
 
