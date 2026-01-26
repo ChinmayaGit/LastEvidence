@@ -78,7 +78,7 @@ class _LobbyRoomScreenState extends State<LobbyRoomScreen> {
           if (lobby == null) {
             // Lobby deleted or doesn't exist
             WidgetsBinding.instance.addPostFrameCallback((_) {
-               if (mounted) Navigator.of(context).pop();
+              if (mounted) Navigator.of(context).pop();
             });
             return const Center(child: Text('Lobby closed'));
           }
@@ -145,8 +145,9 @@ class _LobbyRoomScreenState extends State<LobbyRoomScreen> {
                     return Card(
                       child: ListTile(
                         leading: CircleAvatar(
-                          backgroundColor: Colors.primaries[
-                              player.name.length % Colors.primaries.length],
+                          backgroundColor:
+                              Colors.primaries[player.name.length %
+                                  Colors.primaries.length],
                           child: Text(
                             player.name[0].toUpperCase(),
                             style: const TextStyle(color: Colors.white),
@@ -155,8 +156,9 @@ class _LobbyRoomScreenState extends State<LobbyRoomScreen> {
                         title: Text(
                           player.name,
                           style: TextStyle(
-                            fontWeight:
-                                isMe ? FontWeight.bold : FontWeight.normal,
+                            fontWeight: isMe
+                                ? FontWeight.bold
+                                : FontWeight.normal,
                           ),
                         ),
                         subtitle: isHost ? const Text('Host') : null,

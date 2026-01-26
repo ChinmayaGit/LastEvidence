@@ -2258,7 +2258,6 @@ class _GameBoardScreenState extends State<GameBoardScreen>
       ),
     );
   }
-
 }
 
 class _AccusationDialog extends StatefulWidget {
@@ -2299,7 +2298,7 @@ class _AccusationDialogState extends State<_AccusationDialog> {
           mainAxisSize: MainAxisSize.min,
           children: [
             const Text('Select the suspect:'),
-          DropdownButton<String>(
+            DropdownButton<String>(
               value: _selectedSuspect,
               isExpanded: true,
               items:
@@ -2338,7 +2337,7 @@ class _AccusationDialogState extends State<_AccusationDialog> {
             ),
             const SizedBox(height: 16),
             const Text('Select the room:'),
-          DropdownButton<String>(
+            DropdownButton<String>(
               value: _selectedRoom,
               isExpanded: true,
               items:

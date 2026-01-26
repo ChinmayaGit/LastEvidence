@@ -1,11 +1,48 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'player_setup_screen.dart';
 import 'online_lobby_screen.dart';
 import 'firebase_test_screen.dart';
+import 'tutorial_screen.dart';
 import '../services/auth_service.dart';
 
-class ModeSelectionScreen extends StatelessWidget {
+class ModeSelectionScreen extends StatefulWidget {
   const ModeSelectionScreen({super.key});
+
+  @override
+  State<ModeSelectionScreen> createState() => _ModeSelectionScreenState();
+}
+
+class _ModeSelectionScreenState extends State<ModeSelectionScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkTutorial();
+    });
+  }
+
+  Future<void> _checkTutorial() async {
+    final prefs = await SharedPreferences.getInstance();
+    final hasSeenTutorial = prefs.getBool('has_seen_tutorial') ?? false;
+
+    if (!hasSeenTutorial && mounted) {
+      _showTutorial();
+    }
+  }
+
+  void _showTutorial() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => TutorialScreen(
+          onDone: () {
+            Navigator.pop(context);
+          },
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -14,6 +51,11 @@ class ModeSelectionScreen extends StatelessWidget {
         title: const Text('Evidence - Select Mode'),
         backgroundColor: Colors.deepPurple,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.help_outline, color: Colors.white),
+            tooltip: 'How to Play',
+            onPressed: _showTutorial,
+          ),
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.white),
             tooltip: 'Logout',
@@ -24,7 +66,7 @@ class ModeSelectionScreen extends StatelessWidget {
         ],
       ),
       body: Center(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
