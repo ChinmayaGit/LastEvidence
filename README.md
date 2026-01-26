@@ -10,7 +10,7 @@ Below is the **official visual sequence** used for story flow, UI progression, a
 
 <table>
 <tr>
-<td><img src="https://raw.githubusercontent.com/ChinmayaGit/LastEvidence/refs/heads/main/pics/1.jpg" width="250" height="250"/></td>
+<td><img src="https://raw.githubusercontent.com/ChinmayaGit/LastEvidence/refs/heads/main/pics/1.jpg" width="250" height="350"/></td>
 <td><img src="https://raw.githubusercontent.com/ChinmayaGit/LastEvidence/refs/heads/main/pics/2.jpg" width="250" height="250"/></td>
 <td><img src="https://raw.githubusercontent.com/ChinmayaGit/LastEvidence/refs/heads/main/pics/3.png" width="250" height="250"/></td>
 </tr>
