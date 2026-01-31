@@ -4,6 +4,8 @@
 
 Below is the **official visual sequence** used for story flow, UI progression, and gameplay reference.
 
+playstore link:- https://play.google.com/store/apps/details?id=com.chinu.lastevidence
+
 ---
 
 ## 📖 Visual Story Sequence
